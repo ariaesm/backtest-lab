@@ -42,16 +42,21 @@ def test_cli_run(csv_path: Path, tmp_path: Path, capsys: pytest.CaptureFixture[s
             "slow=30",
             "--trades",
             str(trades),
+            "--plot",
+            str(tmp_path / "eq.png"),
         ]
     )
     out = capsys.readouterr().out
     assert code == 0
     assert "sharpe" in out and "max_drawdown" in out
     assert "entry_time" in pd.read_csv(trades).columns
+    assert (tmp_path / "eq.png").stat().st_size > 0
 
 
-def test_cli_patterns(csv_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["patterns", "--data", str(csv_path), "--last", "3"]) == 0
+def test_cli_patterns(csv_path: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    png = tmp_path / "p.png"
+    assert main(["patterns", "--data", str(csv_path), "--last", "3", "--plot", str(png)]) == 0
+    assert png.exists()
     out = capsys.readouterr().out
     assert "400 bars scanned" in out
     assert "bullish_engulfing" in out

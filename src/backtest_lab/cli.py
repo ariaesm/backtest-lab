@@ -96,12 +96,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_execution(run)
     run.add_argument("--param", "-p", action="append", metavar="KEY=VALUE", help="strategy param")
     run.add_argument("--trades", type=Path, help="write the trade log to this CSV")
+    run.add_argument("--plot", type=Path, help="save equity + drawdown chart to this PNG")
 
     pat = sub.add_parser("patterns", help="detect candlestick patterns")
     _add_common(pat)
     pat.add_argument("--only", nargs="+", choices=list(PATTERNS), help="patterns to detect")
     pat.add_argument("--last", type=int, default=10, help="show the N most recent hits")
     pat.add_argument("--csv", type=Path, help="write the boolean pattern table to CSV")
+    pat.add_argument("--plot", type=Path, help="save a candlestick chart with markers")
+    pat.add_argument("--plot-bars", type=int, default=150, help="bars shown in --plot")
 
     opt = sub.add_parser("optimize", help="grid search with walk-forward validation")
     _add_common(opt)
@@ -130,6 +133,16 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.trades:
         result.trades.to_csv(args.trades, index=False)
         print(f"trades written to {args.trades}")
+    if args.plot:
+        from backtest_lab.plotting import plot_equity
+
+        plot_equity(
+            result,
+            args.plot,
+            title=f"{strat.name} on {args.data.name}",
+            benchmark=data["close"],
+        )
+        print(f"chart written to {args.plot}")
     return 0
 
 
@@ -153,6 +166,11 @@ def cmd_patterns(args: argparse.Namespace) -> int:
     if args.csv:
         table.astype(int).to_csv(args.csv)
         print(f"pattern table written to {args.csv}")
+    if args.plot:
+        from backtest_lab.plotting import plot_patterns
+
+        plot_patterns(data, table, args.plot, last=args.plot_bars)
+        print(f"chart written to {args.plot}")
     return 0
 
 
