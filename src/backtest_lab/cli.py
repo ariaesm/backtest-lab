@@ -184,7 +184,8 @@ def cmd_optimize(args: argparse.Namespace) -> int:
     with pd.option_context("display.width", 120, "display.float_format", "{:.4f}".format):
         print(f"train window: {data.index[0]:%Y-%m-%d} -> before {wf.split_time:%Y-%m-%d}")
         print(f"top {args.top} by {args.metric} (in-sample):")
-        print(wf.train_table[cols].head(args.top).to_string(index=False))
+        top = wf.train_table[cols].head(args.top).astype({"num_trades": int})
+        print(top.to_string(index=False))
     print(f"\nbest params: {wf.best_params}")
     print("\n-- train (in-sample) --")
     print(format_metrics(wf.train_metrics))
