@@ -17,3 +17,4 @@ htmlcov/
 # Generated outputs (docs/ images are committed on purpose)
 /out*.png
 /*.out.csv
+/examples/*.png
