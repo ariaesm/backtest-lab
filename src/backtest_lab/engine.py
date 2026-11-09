@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
+from backtest_lab.metrics import TRADING_DAYS, compute_metrics
+
 
 @dataclass(frozen=True)
 class BacktestConfig:
@@ -65,6 +67,7 @@ class BacktestResult:
         trades: one row per closed trade.
         signals: the (clipped) target signals that were fed to the engine.
         config: the configuration used.
+        metrics: summary statistics from :func:`backtest_lab.metrics.compute_metrics`.
     """
 
     equity: pd.Series
@@ -104,6 +107,8 @@ def run_backtest(
     data: pd.DataFrame,
     signals: pd.Series,
     config: BacktestConfig | None = None,
+    *,
+    periods_per_year: int = TRADING_DAYS,
 ) -> BacktestResult:
     """Simulate trading ``signals`` on ``data``.
 
@@ -111,6 +116,7 @@ def run_backtest(
         data: validated OHLCV frame (see :func:`backtest_lab.data.validate_ohlcv`).
         signals: target direction per bar (values are clipped to -1/0/+1; NaN = 0).
         config: execution settings; defaults to :class:`BacktestConfig`.
+        periods_per_year: bars per year, used to annualise metrics.
 
     Returns:
         A :class:`BacktestResult` with equity curve, positions and trade log.
@@ -220,10 +226,13 @@ def run_backtest(
         cash = saved_cash
 
     trades_df = pd.DataFrame(trades, columns=TRADE_COLUMNS)
+    equity_s = pd.Series(equity, index=idx, name="equity")
+    position_s = pd.Series(position, index=idx, name="position")
     return BacktestResult(
-        equity=pd.Series(equity, index=idx, name="equity"),
-        position=pd.Series(position, index=idx, name="position"),
+        equity=equity_s,
+        position=position_s,
         trades=trades_df,
         signals=pd.Series(sig, index=idx, name="signal"),
         config=cfg,
+        metrics=compute_metrics(equity_s, trades_df, position_s, periods_per_year=periods_per_year),
     )

@@ -167,3 +167,12 @@ def test_signal_index_must_match(random_ohlcv: pd.DataFrame) -> None:
     bad = pd.Series(0.0, index=range(len(random_ohlcv)))
     with pytest.raises(ValueError, match="index"):
         run_backtest(random_ohlcv, bad)
+
+
+def test_result_carries_metrics(random_ohlcv: pd.DataFrame) -> None:
+    signals = np.sign(random_ohlcv["close"].diff()).fillna(0)
+    res = run_backtest(random_ohlcv, signals)
+    assert res.metrics["num_trades"] == len(res.trades)
+    assert res.metrics["total_return"] == pytest.approx(
+        res.equity.iloc[-1] / res.config.initial_cash - 1
+    )
